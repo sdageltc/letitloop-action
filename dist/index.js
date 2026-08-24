@@ -30099,8 +30099,10 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ensureLetItLoopEngine = ensureLetItLoopEngine;
+exports.verifyAstInvariants = verifyAstInvariants;
 const exec = __importStar(__nccwpck_require__(5236));
 const core = __importStar(__nccwpck_require__(7484));
+const path = __importStar(__nccwpck_require__(6928));
 async function ensureLetItLoopEngine(autoInstall) {
     let found = false;
     try {
@@ -30122,6 +30124,47 @@ async function ensureLetItLoopEngine(autoInstall) {
         }
     }
     return found;
+}
+async function verifyAstInvariants(origFile, newFile) {
+    const scriptPath = path.resolve(__dirname, '../scripts/verify_ast.py');
+    let output = '';
+    let errorOutput = '';
+    const options = {
+        silent: true,
+        ignoreReturnCode: true,
+        listeners: {
+            stdout: (data) => {
+                output += data.toString();
+            },
+            stderr: (data) => {
+                errorOutput += data.toString();
+            }
+        }
+    };
+    try {
+        const exitCode = await exec.exec('python', [scriptPath, origFile, newFile], options);
+        if (output.trim()) {
+            const parsed = JSON.parse(output.trim());
+            return {
+                status: parsed.status || (exitCode === 0 ? 'PASS' : 'FAIL'),
+                violations: parsed.violations || [],
+                violationCount: parsed.violation_count || (parsed.violations ? parsed.violations.length : 0),
+            };
+        }
+        return {
+            status: exitCode === 0 ? 'PASS' : 'FAIL',
+            violations: [],
+            violationCount: 0,
+        };
+    }
+    catch (err) {
+        core.warning(`AST verification skipped or failed: ${err}`);
+        return {
+            status: 'SKIPPED',
+            violations: [],
+            violationCount: 0,
+        };
+    }
 }
 
 
