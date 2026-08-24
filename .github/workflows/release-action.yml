@@ -1,0 +1,40 @@
+name: Release Action & Update Major Tag
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version_tag:
+        description: 'Semantic Version Tag (e.g. v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+permissions:
+  contents: write
+
+jobs:
+  release-and-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build
+      - name: Verify dist/ committed
+        run: |
+          git diff --exit-code dist/ || (echo "dist/ was modified during build! Run npm run build and commit." && exit 1)
+      - name: Update Floating Major Version Tag
+        run: |
+          TAG_NAME="${{ github.event.inputs.version_tag || github.ref_name }}"
+          MAJOR_TAG=$(echo "$TAG_NAME" | cut -d. -f1)
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -fa "$MAJOR_TAG" -m "Update $MAJOR_TAG floating tag to $TAG_NAME"
+          git push origin "$MAJOR_TAG" --force
