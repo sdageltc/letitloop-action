@@ -1,0 +1,28 @@
+name: 'LetItLoop Proof-Carrying PR Verification Gate'
+description: 'Generate signed machine-verifiable proof bundles (AST Invariants, Test Receipts, Scope Fences) for AI pull requests'
+author: 'sdageltc'
+branding:
+  icon: 'shield-check'
+  color: 'blue'
+
+inputs:
+  github-token:
+    description: 'GitHub Token for posting PR proof comments'
+    required: true
+    default: ${{ github.token }}
+  strict-ast:
+    description: 'Enforce strict AST signature preservation'
+    required: false
+    default: 'true'
+  test-command:
+    description: 'Test command to execute inside sandbox'
+    required: false
+    default: 'pytest -q'
+  auto-install-engine:
+    description: 'Automatically install letitloop via pip if missing'
+    required: false
+    default: 'true'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
