@@ -1,4 +1,4 @@
 {
-  "summary": "Standalone zero-dependency AST verification script for letitloop-action.",
-  "updatedAt": "2026-08-25T19:11:51.665404900Z"
+  "summary": "Dual-mode AST invariant and signature diff validator for letitloop-action.",
+  "updatedAt": "2026-08-25T19:40:57.994536500Z"
 }
