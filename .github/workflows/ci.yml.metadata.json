@@ -1,4 +1,4 @@
 {
-  "summary": "CI workflow for letitloop-action with dist verification and least-privilege token permissions",
-  "updatedAt": "2026-08-24T13:53:17.135906700Z"
+  "summary": "Added self-dogfooding verification step to letitloop-action CI workflow.",
+  "updatedAt": "2026-08-25T11:33:08.184285400Z"
 }
