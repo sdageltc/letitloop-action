@@ -7,164 +7,321 @@
   <meta name="description" content="Zero-config GitHub Action for AST signature preservation, scope fencing, and deterministic verification on AI coding agent Pull Requests." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #0b0f19;
-      --card-bg: rgba(17, 24, 39, 0.75);
-      --card-border: rgba(255, 255, 255, 0.08);
-      --text: #f3f4f6;
-      --text-muted: #9ca3af;
-      --primary: #3b82f6;
-      --primary-glow: rgba(59, 130, 246, 0.25);
-      --success: #10b981;
-      --code-bg: #030712;
+      --bg: #090d16;
+      --bg-surface: rgba(17, 24, 39, 0.85);
+      --bg-card: rgba(22, 30, 46, 0.7);
+      --bg-code: #0b0f19;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(56, 189, 248, 0.35);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.25);
+      --green: #10b981;
+      --green-glow: rgba(16, 185, 129, 0.2);
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --radius: 14px;
+      --radius-sm: 8px;
     }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       background-color: var(--bg);
       color: var(--text);
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: var(--font-sans);
       min-height: 100vh;
       line-height: 1.6;
       background-image: 
-        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
-        radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.1) 0px, transparent 50%);
+        radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.08) 0px, transparent 50%);
     }
+
     .container {
-      max-width: 1000px;
+      max-width: 1100px;
       margin: 0 auto;
-      padding: 40px 24px 80px;
+      padding: 0 1.5rem;
     }
+
+    /* Universal Ecosystem Top Navigation */
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.25rem 0;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: rgba(9, 13, 22, 0.85);
+      backdrop-filter: blur(16px);
+      z-index: 100;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 800;
+      font-size: 1.25rem;
+      text-decoration: none;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+    .brand-badge {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+    }
+    .nav-links {
+      display: flex;
+      gap: 1.25rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .nav-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+    .nav-link:hover, .nav-link.active { color: var(--accent); }
+    .btn-nav-gh {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.45rem 0.9rem;
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .btn-nav-gh:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
     header {
       text-align: center;
-      margin-bottom: 48px;
+      padding: 3.5rem 0 2rem;
     }
     .badge-pill {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 6px 16px;
+      padding: 6px 18px;
       border-radius: 9999px;
-      background: rgba(59, 130, 246, 0.1);
-      border: 1px solid rgba(59, 130, 246, 0.3);
-      color: #60a5fa;
-      font-size: 0.875rem;
-      font-weight: 600;
-      margin-bottom: 20px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid var(--border-accent);
+      color: var(--accent);
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-bottom: 18px;
+      letter-spacing: 0.02em;
     }
     h1 {
-      font-size: 2.75rem;
+      font-size: 3rem;
       font-weight: 800;
       letter-spacing: -0.03em;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
       background: linear-gradient(135deg, #ffffff 0%, #93c5fd 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
     p.subtitle {
       color: var(--text-muted);
-      font-size: 1.125rem;
-      max-width: 680px;
-      margin: 0 auto 24px;
+      font-size: 1.15rem;
+      max-width: 720px;
+      margin: 0 auto;
     }
-    .ecosystem-nav {
-      display: flex;
-      justify-content: center;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-    .ecosystem-nav a {
-      color: var(--text-muted);
-      text-decoration: none;
-      font-size: 0.9rem;
-      padding: 8px 16px;
-      border-radius: 8px;
-      border: 1px solid var(--card-border);
-      background: var(--card-bg);
-      transition: all 0.2s ease;
-    }
-    .ecosystem-nav a:hover {
-      color: #fff;
-      border-color: var(--primary);
-      box-shadow: 0 0 15px var(--primary-glow);
-    }
+
     .card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
       padding: 32px;
       margin-bottom: 32px;
       backdrop-filter: blur(12px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     }
+    h2 {
+      font-size: 1.45rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+    p.card-desc {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-bottom: 20px;
+    }
+
     pre {
-      background: var(--code-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 10px;
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
       padding: 20px;
       overflow-x: auto;
-      font-family: 'JetBrains Mono', monospace;
+      font-family: var(--font-mono);
       font-size: 0.88rem;
       color: #e2e8f0;
+      line-height: 1.55;
+      position: relative;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 4px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-family: var(--font-sans);
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    .copy-btn:hover { background: var(--accent); color: #090d16; }
+
+    /* PR Receipt Comment Mockup */
+    .pr-mockup {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: var(--radius-sm);
+      padding: 20px;
       margin-top: 16px;
     }
+    .pr-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid #21262d;
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+      font-size: 0.88rem;
+    }
+    .pr-badge {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      font-weight: 600;
+    }
+    .pr-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    .pr-table th {
+      text-align: left;
+      color: #8b949e;
+      border-bottom: 1px solid #30363d;
+      padding: 8px 10px;
+    }
+    .pr-table td {
+      border-bottom: 1px solid #21262d;
+      padding: 10px;
+      color: #c9d1d9;
+    }
+
+    /* Grid of Guarantees */
     .grid-3 {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 20px;
-      margin-top: 20px;
     }
     .feature-card {
       background: rgba(255, 255, 255, 0.02);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
       padding: 20px;
     }
     .feature-card h3 {
       font-size: 1.05rem;
       color: #93c5fd;
       margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
     .feature-card p {
-      font-size: 0.88rem;
       color: var(--text-muted);
+      font-size: 0.88rem;
+      line-height: 1.5;
     }
+
     footer {
       text-align: center;
-      color: var(--text-muted);
+      color: var(--text-dim);
       font-size: 0.85rem;
-      margin-top: 48px;
-      border-top: 1px solid var(--card-border);
-      padding-top: 32px;
+      margin: 5rem 0 3rem;
+      border-top: 1px solid var(--border);
+      padding-top: 2rem;
     }
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+    .footer-links a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; }
+    .footer-links a:hover { color: var(--accent); }
   </style>
 </head>
 <body>
   <div class="container">
+    <!-- Universal Top Navigation -->
+    <nav>
+      <a href="https://sdageltc.github.io/letitloop/" class="brand">
+        <span>LetItLoop</span>
+        <span class="brand-badge">@v1 Action</span>
+      </a>
+      <div class="nav-links">
+        <a href="https://sdageltc.github.io/letitloop/" class="nav-link">Engine Core</a>
+        <a href="https://sdageltc.github.io/agent-durability-bench/" class="nav-link">Durability Bench</a>
+        <a href="index.html" class="nav-link active">CI Action Gate</a>
+        <a href="https://pypi.org/project/letitloop/" target="_blank" class="nav-link" style="color: #60a5fa;">PyPI</a>
+        <a href="https://github.com/sdageltc/letitloop-action" target="_blank" class="btn-nav-gh">⭐ Action Repo</a>
+      </div>
+    </nav>
+
+    <!-- Header -->
     <header>
       <div class="badge-pill">
-        <span>🛡️ GitHub Action v1 • Zero Node Modules</span>
+        <span>🛡️ GitHub Actions Marketplace CI Gate</span>
       </div>
       <h1>letitloop-action</h1>
       <p class="subtitle">
-        Proof-carrying verification gate for GitHub Actions. Prevents AI coding agent signature drift, decorator stripping, and scope boundary leakage on Pull Requests.
+        Zero-config GitHub Action running AST invariant validation, scope fencing, and deterministic verification on AI-generated Pull Requests.
       </p>
-      <div class="ecosystem-nav">
-        <a href="https://github.com/marketplace/actions/letitloop-proof-carrying-pr-verification-gate" target="_blank" rel="noreferrer">🛍️ Marketplace Action</a>
-        <a href="https://github.com/sdageltc/letitloop-action" target="_blank" rel="noreferrer">💻 GitHub Repo</a>
-        <a href="https://github.com/sdageltc/letitloop" target="_blank" rel="noreferrer">⚙️ Engine Core</a>
-        <a href="https://sdageltc.github.io/agent-durability-bench/" target="_blank" rel="noreferrer">🏆 Durability Bench</a>
-      </div>
     </header>
 
+    <!-- 1-Minute Quickstart -->
     <div class="card">
-      <h2 style="font-size: 1.4rem; margin-bottom: 8px; font-weight: 700;">🚀 1-Minute GitHub Actions Setup</h2>
-      <p style="color: var(--text-muted); font-size: 0.95rem;">Add <code>.github/workflows/letitloop-verify.yml</code> to your repository:</p>
-      <pre><code>name: Verify AI Pull Request
-
+      <h2>🚀 1-Minute GitHub Actions Quickstart</h2>
+      <p class="card-desc">Add this single workflow file to any repository to guard against AI agent hallucinations, parameter drift, and decorator stripping:</p>
+      
+      <pre><code><button class="copy-btn" onclick="copyCode(this)">Copy</button># .github/workflows/letitloop-verify.yml
+name: Verify AI Pull Request
 on:
   pull_request:
-    branches: [ main ]
+    branches: [main, master]
 
 permissions:
   contents: read
@@ -174,10 +331,14 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
       - name: Run LetItLoop Verification Gate
         uses: sdageltc/letitloop-action@v1
         with:
@@ -186,27 +347,91 @@ jobs:
           test-command: 'pytest -q'</code></pre>
     </div>
 
+    <!-- Live PR Receipt Preview Mockup -->
     <div class="card">
-      <h2 style="font-size: 1.4rem; margin-bottom: 16px; font-weight: 700;">🛡️ Core Verification Guarantees</h2>
+      <h2>📜 Cryptographic Proof Receipts on PRs</h2>
+      <p class="card-desc">When AI agents submit PRs, <code>letitloop-action</code> automatically posts a machine-verifiable proof receipt directly to the pull request discussion:</p>
+
+      <div class="pr-mockup">
+        <div class="pr-header">
+          <strong>github-actions</strong> <span style="color: #8b949e;">bot commented on PR #42</span>
+          <span class="pr-badge">LetItLoop Verified</span>
+        </div>
+        <table class="pr-table">
+          <thead>
+            <tr>
+              <th>Verification Check</th>
+              <th>Status</th>
+              <th>Details & Evidence</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>AST Signature Invariance</strong></td>
+              <td><span style="color: #34d399; font-weight: bold;">✓ PASS</span></td>
+              <td>0 signature drifts detected across 4 mutated functions</td>
+            </tr>
+            <tr>
+              <td><strong>Scope Fence Invariant</strong></td>
+              <td><span style="color: #34d399; font-weight: bold;">✓ PASS</span></td>
+              <td>All modified files within declared task boundary</td>
+            </tr>
+            <tr>
+              <td><strong>Deterministic Test Gate</strong></td>
+              <td><span style="color: #34d399; font-weight: bold;">✓ PASS</span></td>
+              <td>23/23 tests passed in 1.4s (exit code 0)</td>
+            </tr>
+            <tr>
+              <td><strong>HMAC SHA-256 Receipt</strong></td>
+              <td><span style="color: #38bdf8; font-family: monospace;">e3b0c44298fc1c149afbf4c8...</span></td>
+              <td>Non-repudiation cryptographic verification signature</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 3 Core Guarantees -->
+    <div class="card">
+      <h2>✨ 3 Core Guarantees</h2>
       <div class="grid-3">
         <div class="feature-card">
-          <h3>📐 AST Signature Invariance</h3>
-          <p>Verifies function signatures, parameter names, type annotations, and default values are preserved across edits.</p>
+          <h3>🧬 1. AST Invariance</h3>
+          <p>Mathematically verifies that function names, argument types, defaults, and return annotations are preserved during refactoring.</p>
         </div>
         <div class="feature-card">
-          <h3>🔒 Scope Fence Enforcement</h3>
-          <p>Fails the PR if an AI agent touches files outside declared task output boundaries or modifies protected configurations.</p>
+          <h3>🚧 2. Scope Fencing</h3>
+          <p>Fails closed if an AI agent touches unauthorized directories, modifies security configurations, or deletes production tests.</p>
         </div>
         <div class="feature-card">
-          <h3>📜 Cryptographic Proof Receipts</h3>
-          <p>Hashes test output, execution duration, and AST checks into a SHA-256 receipt posted directly to PR comments.</p>
+          <h3>🔏 3. Proof Receipts</h3>
+          <p>Signs execution telemetry with HMAC-SHA256 non-repudiation receipts, preventing tampered test results from entering main.</p>
         </div>
       </div>
     </div>
 
+    <!-- Footer -->
     <footer>
-      <p>Maintained by <a href="https://github.com/sdageltc" style="color: #60a5fa; text-decoration: none;">@sdageltc</a> • Published under MIT License</p>
+      <div class="footer-links">
+        <a href="https://github.com/sdageltc/letitloop" target="_blank">Engine Core</a>
+        <a href="https://sdageltc.github.io/agent-durability-bench/">Durability Bench</a>
+        <a href="index.html">GitHub Action</a>
+        <a href="https://pypi.org/project/letitloop/" target="_blank">PyPI Package</a>
+        <a href="https://github.com/sdageltc" target="_blank">Maintainer (@sdageltc)</a>
+      </div>
+      <p>© 2026 sdageltc • Open source under the MIT License.</p>
     </footer>
   </div>
+
+  <script>
+    function copyCode(btn) {
+      const code = btn.parentElement.innerText.replace('Copy', '').trim();
+      navigator.clipboard.writeText(code).then(() => {
+        const old = btn.innerText;
+        btn.innerText = 'Copied!';
+        setTimeout(() => { btn.innerText = old; }, 2000);
+      });
+    }
+  </script>
 </body>
 </html>
