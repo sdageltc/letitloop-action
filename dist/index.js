@@ -30029,16 +30029,29 @@ async function run() {
             receiptSha256: sha,
         };
         const commentBody = (0, commenter_1.formatEvidenceComment)(evidence);
-        // 4. Post comment if in PR context
+        // 4. Output to GitHub Step Summary ($GITHUB_STEP_SUMMARY)
+        try {
+            await core.summary.addRaw(commentBody).write();
+            core.info('Written verification receipt to GitHub Actions Step Summary.');
+        }
+        catch (summaryError) {
+            core.debug(`Failed to write step summary: ${summaryError}`);
+        }
+        // 5. Post comment if in PR context with graceful token fallback
         const context = github.context;
         if (context.payload.pull_request) {
-            const octokit = github.getOctokit(token);
-            await octokit.rest.issues.createComment({
-                ...context.repo,
-                issue_number: context.payload.pull_request.number,
-                body: commentBody,
-            });
-            core.info('Posted LetItLoop Proof Receipt to Pull Request.');
+            try {
+                const octokit = github.getOctokit(token);
+                await octokit.rest.issues.createComment({
+                    ...context.repo,
+                    issue_number: context.payload.pull_request.number,
+                    body: commentBody,
+                });
+                core.info('Posted LetItLoop Proof Receipt to Pull Request.');
+            }
+            catch (commentError) {
+                core.warning(`Unable to post comment to Pull Request (likely due to fork permissions or missing 'pull-requests: write'). Proof receipt recorded in Step Summary and stdout.`);
+            }
         }
         else {
             core.info('Not in a pull_request event context. Outputting proof to console:');
