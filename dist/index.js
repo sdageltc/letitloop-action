@@ -30019,11 +30019,22 @@ async function run() {
         catch (e) {
             testExitCode = 1;
         }
-        // 3. Compile Proof Evidence & Ingest Engine Manifest
         const elapsedMs = Date.now() - startTime;
         let sha = '';
         let scopeViolations = [];
-        let astValid = strictAst ? true : true;
+        let astValid = true;
+        if (strictAst) {
+            try {
+                const verifyScript = path.join(__dirname, '..', 'scripts', 'verify_ast.py');
+                if (fs.existsSync(verifyScript)) {
+                    const astExit = await exec.exec(`python "${verifyScript}"`);
+                    astValid = (astExit === 0);
+                }
+            }
+            catch (e) {
+                astValid = false;
+            }
+        }
         // Check for physical evidence written by engine
         const possibleEvidencePaths = [
             path.join(process.cwd(), 'scratch', 'orchestrator_runs', 'verification_evidence.json'),
