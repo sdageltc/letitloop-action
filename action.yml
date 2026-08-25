@@ -2,7 +2,7 @@ name: 'LetItLoop Proof-Carrying PR Verification Gate'
 description: 'Generate signed machine-verifiable proof bundles (AST Invariants, Test Receipts, Scope Fences) for AI pull requests'
 author: 'sdageltc'
 branding:
-  icon: 'shield-check'
+  icon: 'shield'
   color: 'blue'
 
 inputs:
