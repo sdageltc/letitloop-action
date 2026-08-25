@@ -118,4 +118,4 @@ When `letitloop-action` runs on a Pull Request, it evaluates structural invarian
 
 ## License
 
-MIT License. Copyright (c) 2026 Oguzhan Kayan.
+MIT License. Copyright (c) 2026 sdageltc.
