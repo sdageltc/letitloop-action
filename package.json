@@ -1,6 +1,6 @@
 {
   "name": "letitloop-action",
-  "version": "1.0.0",
+  "version": "1.0.4",
   "description": "GitHub Action for LetItLoop proof-carrying PR verification",
   "main": "dist/index.js",
   "scripts": {
