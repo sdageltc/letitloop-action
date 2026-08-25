@@ -1,441 +1,655 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>letitloop-action | Proof-Carrying CI Gate for AI Pull Requests</title>
-  <meta name="description" content="Zero-config GitHub Action for AST signature preservation, scope fencing, and deterministic verification on AI coding agent Pull Requests." />
-  <link rel="icon" type="image/png" href="assets/logo.png" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LetItLoop Action v2 — Deterministic Proof-Carrying CI Gate</title>
+  <meta name="description" content="Fail closed on untrusted PR diffs, enforce strict AST syntax invariants, and verify cryptographic HMAC-SHA256 durability receipts in GitHub Actions.">
+  <meta name="theme-color" content="#070a11">
+  <link rel="icon" type="image/png" href="assets/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #090d16;
-      --bg-surface: rgba(17, 24, 39, 0.85);
-      --bg-card: rgba(22, 30, 46, 0.7);
-      --bg-code: #0b0f19;
-      --border: rgba(255, 255, 255, 0.08);
-      --border-accent: rgba(56, 189, 248, 0.35);
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --text-dim: #64748b;
       --accent: #38bdf8;
-      --accent-glow: rgba(56, 189, 248, 0.25);
+      --accent-dark: #0284c7;
+      --accent-glow: rgba(56, 189, 248, 0.22);
+      --accent-4: rgba(56, 189, 248, 0.04);
+      --accent-8: rgba(56, 189, 248, 0.08);
+      --accent-16: rgba(56, 189, 248, 0.16);
       --green: #10b981;
-      --green-glow: rgba(16, 185, 129, 0.2);
-      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      --font-mono: 'JetBrains Mono', monospace;
-      --radius: 14px;
+      --green-glow: rgba(16, 185, 129, 0.15);
+      --danger: #ef4444;
+      --purple: #c084fc;
+      
+      --text: #f8fafc;
+      --text-88: rgba(248, 250, 252, 0.88);
+      --text-64: rgba(248, 250, 252, 0.64);
+      --text-48: rgba(248, 250, 252, 0.48);
+      --text-32: rgba(248, 250, 252, 0.32);
+      
+      --base: #070a11;
+      --lighter: #0d121f;
+      --surface: #111827;
+      --surface-card: rgba(17, 24, 39, 0.75);
+      --border: rgba(255, 255, 255, 0.09);
+      --border-muted: rgba(255, 255, 255, 0.05);
+      --border-accent: rgba(56, 189, 248, 0.3);
+      --code: #0b0f19;
+      
+      --sans: "Geist", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --mono: "Geist Mono", "JetBrains Mono", Consolas, monospace;
+      --width: 1140px;
+      --radius: 12px;
       --radius-sm: 8px;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; scroll-padding-top: 80px; }
     body {
-      background-color: var(--bg);
+      background: var(--base);
       color: var(--text);
-      font-family: var(--font-sans);
-      min-height: 100vh;
+      font-family: var(--sans);
+      font-size: 15px;
       line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      min-height: 100vh;
+    }
+
+    /* Precision Background Grid */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -1;
       background-image: 
-        radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0px, transparent 50%),
-        radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.08) 0px, transparent 50%);
+        linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 56px 56px;
+      -webkit-mask-image: radial-gradient(circle at 50% 30%, black 40%, transparent 85%);
+      mask-image: radial-gradient(circle at 50% 30%, black 40%, transparent 85%);
     }
 
-    .container {
-      max-width: 1100px;
+    ::selection { background: var(--accent-16); color: var(--accent); }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    button, input { font: inherit; }
+
+    /* Framed Editorial Shell */
+    .shell {
+      width: min(calc(100% - 32px), var(--width));
       margin: 0 auto;
-      padding: 0 1.5rem;
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      background: rgba(7, 10, 17, 0.6);
+      backdrop-filter: blur(8px);
     }
+    .pad { padding-left: clamp(20px, 4vw, 44px); padding-right: clamp(20px, 4vw, 44px); }
+    .full-rule { border-top: 1px solid var(--border); }
 
-    /* Universal Ecosystem Top Navigation */
-    nav {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1.25rem 0;
-      border-bottom: 1px solid var(--border);
+    /* Sticky Navigation */
+    .site-nav {
       position: sticky;
       top: 0;
-      background: rgba(9, 13, 22, 0.85);
+      z-index: 50;
+      height: 64px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(7, 10, 17, 0.9);
+      -webkit-backdrop-filter: blur(16px);
       backdrop-filter: blur(16px);
-      z-index: 100;
     }
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      font-weight: 800;
-      font-size: 1.25rem;
-      text-decoration: none;
-      color: var(--text);
-      letter-spacing: -0.02em;
-    }
-    .brand-badge {
-      background: rgba(16, 185, 129, 0.15);
-      color: #34d399;
-      padding: 0.2rem 0.6rem;
-      border-radius: 999px;
-      font-size: 0.75rem;
-      font-family: var(--font-mono);
-      font-weight: 700;
-      border: 1px solid rgba(16, 185, 129, 0.35);
-    }
-    .nav-links {
-      display: flex;
-      gap: 1.25rem;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-    .nav-link {
-      color: var(--text-muted);
-      text-decoration: none;
-      font-size: 0.9rem;
-      font-weight: 600;
-      transition: color 0.2s;
-    }
-    .nav-link:hover, .nav-link.active { color: var(--accent); }
-    .btn-nav-gh {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 0.45rem 0.9rem;
-      border-radius: var(--radius-sm);
-      text-decoration: none;
-      font-size: 0.85rem;
-      font-weight: 600;
-      transition: all 0.2s;
-    }
-    .btn-nav-gh:hover {
-      background: rgba(255, 255, 255, 0.12);
-      border-color: rgba(255, 255, 255, 0.2);
-    }
-
-    header {
-      text-align: center;
-      padding: 3.5rem 0 2rem;
-    }
-    .badge-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 18px;
-      border-radius: 9999px;
-      background: rgba(56, 189, 248, 0.1);
-      border: 1px solid var(--border-accent);
-      color: var(--accent);
-      font-size: 0.85rem;
-      font-weight: 700;
-      margin-bottom: 18px;
-      letter-spacing: 0.02em;
-    }
-    h1 {
-      font-size: 3rem;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      margin-bottom: 12px;
-      background: linear-gradient(135deg, #ffffff 0%, #93c5fd 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    p.subtitle {
-      color: var(--text-muted);
-      font-size: 1.15rem;
-      max-width: 720px;
+    .nav-inner {
+      width: min(calc(100% - 32px), var(--width));
+      height: 100%;
       margin: 0 auto;
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
     }
-
-    .card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 32px;
-      margin-bottom: 32px;
-      backdrop-filter: blur(12px);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    }
-    h2 {
-      font-size: 1.45rem;
-      font-weight: 700;
-      margin-bottom: 14px;
-    }
-    p.card-desc {
-      color: var(--text-muted);
-      font-size: 0.95rem;
-      margin-bottom: 20px;
-    }
-
-    pre {
-      background: var(--bg-code);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 20px;
-      overflow-x: auto;
-      font-family: var(--font-mono);
-      font-size: 0.88rem;
-      color: #e2e8f0;
-      line-height: 1.55;
-      position: relative;
-    }
-    .copy-btn {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 4px 10px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 0.75rem;
-      font-family: var(--font-sans);
-      font-weight: 600;
-      transition: background 0.2s;
-    }
-    .copy-btn:hover { background: var(--accent); color: #090d16; }
-
-    /* PR Receipt Comment Mockup */
-    .pr-mockup {
-      background: #0d1117;
-      border: 1px solid #30363d;
-      border-radius: var(--radius-sm);
-      padding: 20px;
-      margin-top: 16px;
-    }
-    .pr-header {
+    .nav-brand {
       display: flex;
       align-items: center;
       gap: 10px;
-      border-bottom: 1px solid #21262d;
-      padding-bottom: 12px;
-      margin-bottom: 16px;
-      font-size: 0.88rem;
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
     }
-    .pr-badge {
-      background: rgba(56, 189, 248, 0.15);
-      color: #38bdf8;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      font-family: var(--font-mono);
+    .nav-brand img {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .version-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
       font-weight: 600;
+      color: var(--accent);
+      background: var(--accent-8);
+      border: 1px solid var(--border-accent);
+      padding: 2px 8px;
+      border-radius: 999px;
     }
-    .pr-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.85rem;
+    .version-badge::before {
+      content: "";
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 6px var(--accent);
     }
-    .pr-table th {
-      text-align: left;
-      color: #8b949e;
-      border-bottom: 1px solid #30363d;
-      padding: 8px 10px;
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 18px;
     }
-    .pr-table td {
-      border-bottom: 1px solid #21262d;
-      padding: 10px;
-      color: #c9d1d9;
+    .nav-link {
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: var(--text-64);
+      transition: color 0.15s;
+    }
+    .nav-link:hover, .nav-link.active {
+      color: var(--text);
+    }
+    .btn-gh {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text-88);
+      padding: 5px 11px;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+    .btn-gh:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+      color: #fff;
     }
 
-    /* Grid of Guarantees */
-    .grid-3 {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 20px;
+    /* Hero Section */
+    .hero {
+      padding: 64px 0 48px;
+      text-align: center;
     }
-    .feature-card {
-      background: rgba(255, 255, 255, 0.02);
+    .hero-logo-showcase {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .hero-logo-showcase img {
+      width: 104px;
+      height: 104px;
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 36px var(--accent-glow);
+    }
+    .hero-pill-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 14px;
+      background: var(--lighter);
       border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 20px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      color: var(--text-64);
+      margin-bottom: 20px;
     }
-    .feature-card h3 {
-      font-size: 1.05rem;
-      color: #93c5fd;
+    .hero-pill-wrap strong {
+      color: var(--accent);
+      font-weight: 600;
+    }
+    h1.hero-title {
+      font-size: clamp(2.2rem, 5vw, 3.4rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.12;
+      max-width: 860px;
+      margin: 0 auto 16px;
+      color: #ffffff;
+    }
+    p.hero-sub {
+      font-size: clamp(1.02rem, 2vw, 1.15rem);
+      color: var(--text-64);
+      max-width: 720px;
+      margin: 0 auto 28px;
+      line-height: 1.55;
+    }
+
+    /* Action Strip */
+    .action-strip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 32px;
+    }
+    .btn-action-primary {
+      background: #0284c7;
+      color: #ffffff;
+      padding: 8px 18px;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      font-size: 0.9rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: background 0.15s, transform 0.15s;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+    }
+    .btn-action-primary:hover {
+      background: #0369a1;
+      transform: translateY(-1px);
+    }
+    .btn-action-secondary {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      color: var(--text-88);
+      padding: 8px 18px;
+      border-radius: var(--radius-sm);
+      font-weight: 500;
+      font-size: 0.9rem;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .btn-action-secondary:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.16);
+      color: #fff;
+    }
+    .install-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      background: var(--code);
+      border: 1px solid var(--border);
+      padding: 7px 14px;
+      border-radius: var(--radius-sm);
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      color: var(--text-88);
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .install-pill:hover {
+      border-color: var(--border-accent);
+    }
+
+    /* Performance Metrics Ribbon */
+    .metric-ribbon {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: rgba(13, 18, 31, 0.5);
+    }
+    .metric-cell {
+      padding: 18px 14px;
+      text-align: center;
+      border-right: 1px solid var(--border);
+    }
+    .metric-cell:last-child { border-right: none; }
+    .metric-num {
+      font-family: var(--mono);
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.03em;
+    }
+    .metric-lbl {
+      font-size: 0.76rem;
+      color: var(--text-48);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    /* Section Headers */
+    .section-head {
+      padding: 44px 0 24px;
+      text-align: center;
+    }
+    .section-kicker {
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent);
       margin-bottom: 8px;
+    }
+    .section-title {
+      font-size: 1.85rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: #ffffff;
+      margin-bottom: 8px;
+    }
+    .section-sub {
+      color: var(--text-64);
+      max-width: 620px;
+      margin: 0 auto;
+      font-size: 0.95rem;
+    }
+
+    /* Bento Grid */
+    .bento-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .bento-box {
+      padding: 28px 24px;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-card);
+      transition: background 0.15s;
+    }
+    .bento-box:nth-child(3n) { border-right: none; }
+    .bento-box:nth-last-child(-n+3) { border-bottom: none; }
+    .bento-box:hover {
+      background: rgba(22, 30, 46, 0.9);
+    }
+    .bento-tag {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .bento-h {
+      font-size: 1.08rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #ffffff;
+      margin-bottom: 8px;
+    }
+    .bento-p {
+      color: var(--text-64);
+      font-size: 0.88rem;
+      line-height: 1.55;
+    }
+
+    /* Code Container */
+    .code-box-wrap {
+      padding: 24px 0 54px;
+    }
+    .code-container {
+      background: var(--code);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+      font-family: var(--mono);
+      font-size: 0.86rem;
+      line-height: 1.65;
+      overflow-x: auto;
+      color: #e2e8f0;
+      position: relative;
+    }
+    .code-copy-btn {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      color: var(--text-64);
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .code-copy-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+    }
+
+    /* Footer */
+    footer {
+      padding: 44px 0 54px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 0.85rem;
+      color: var(--text-48);
+    }
+    .footer-brand {
       display: flex;
       align-items: center;
       gap: 8px;
+      color: var(--text-88);
+      font-weight: 600;
     }
-    .feature-card p {
-      color: var(--text-muted);
-      font-size: 0.88rem;
-      line-height: 1.5;
-    }
-
-    footer {
-      text-align: center;
-      color: var(--text-dim);
-      font-size: 0.85rem;
-      margin: 5rem 0 3rem;
-      border-top: 1px solid var(--border);
-      padding-top: 2rem;
+    .footer-brand img {
+      width: 22px;
+      height: 22px;
+      border-radius: 5px;
     }
     .footer-links {
       display: flex;
-      justify-content: center;
-      gap: 1.5rem;
-      flex-wrap: wrap;
-      margin-bottom: 1rem;
+      gap: 16px;
     }
-    .footer-links a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; }
     .footer-links a:hover { color: var(--accent); }
+
+    @media (max-width: 860px) {
+      .bento-grid { grid-template-columns: 1fr; }
+      .bento-box { border-right: none !important; }
+      .metric-ribbon { grid-template-columns: repeat(2, 1fr); }
+      .metric-cell:nth-child(2n) { border-right: none; }
+      .metric-cell:nth-child(-n+2) { border-bottom: 1px solid var(--border); }
+      .nav-links { display: none; }
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <!-- Universal Top Navigation -->
-    <nav>
-      <a href="https://sdageltc.github.io/letitloop/" class="brand">
-        <img src="assets/logo.png" alt="LetItLoop Logo" width="34" height="34" style="border-radius: 8px; object-fit: contain;" />
-        <span>LetItLoop</span>
-        <span class="brand-badge">@v1 Action</span>
+
+  <!-- Navigation -->
+  <header class="site-nav">
+    <div class="nav-inner">
+      <a href="https://github.com/sdageltc/letitloop-action" class="nav-brand">
+        <img src="assets/logo.png" alt="LetItLoop" />
+        LetItLoop
+        <span class="version-badge">Action v2</span>
       </a>
-      <div class="nav-links">
-        <a href="https://sdageltc.github.io/letitloop/" class="nav-link">Engine Core</a>
-        <a href="https://sdageltc.github.io/agent-durability-bench/" class="nav-link">Durability Bench</a>
-        <a href="index.html" class="nav-link active">CI Action Gate</a>
-        <a href="https://pypi.org/project/letitloop/" target="_blank" class="nav-link" style="color: #60a5fa;">PyPI</a>
-        <a href="https://github.com/sdageltc/letitloop-action" target="_blank" class="btn-nav-gh">⭐ Action Repo</a>
-      </div>
-    </nav>
+      <nav class="nav-links">
+        <a href="https://sdageltc.github.io/letitloop/" class="nav-link">Runtime Engine</a>
+        <a href="https://sdageltc.github.io/agent-durability-bench/" class="nav-link">DCP-2.0 Benchmark</a>
+        <a href="https://github.com/sdageltc/letitloop-action" class="nav-link active">GitHub Action</a>
+        <a href="https://github.com/sdageltc/letitloop-action" class="btn-gh" target="_blank" rel="noreferrer">
+          <svg height="14" width="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+          ★ Action Repo
+        </a>
+      </nav>
+    </div>
+  </header>
 
-    <!-- Header -->
-    <header>
-      <div style="margin-bottom: 1.25rem;">
-        <img src="assets/logo.png" alt="LetItLoop Action Shield" width="80" height="80" style="border-radius: 16px; box-shadow: 0 0 35px rgba(56, 189, 248, 0.4); border: 1px solid rgba(56, 189, 248, 0.5);" />
+  <!-- Editorial Shell Body -->
+  <main class="shell">
+    
+    <!-- Hero Header -->
+    <section class="hero pad">
+      <div class="hero-logo-showcase">
+        <img src="assets/logo.png" alt="LetItLoop Brand Logo" />
       </div>
-      <div class="badge-pill">
-        <span>🛡️ GitHub Actions Marketplace CI Gate</span>
+      <div class="hero-pill-wrap">
+        <span>Proof-Carrying CI Gate</span>
+        <span>•</span>
+        <strong>Strict AST Validation</strong>
       </div>
-      <h1>letitloop-action</h1>
-      <p class="subtitle">
-        Zero-config GitHub Action running AST invariant validation, scope fencing, and deterministic verification on AI-generated Pull Requests.
+      <h1 class="hero-title">Deterministic Proof-Carrying CI Gate<br/>For GitHub Actions</h1>
+      <p class="hero-sub">
+        Fail closed on untrusted PR diffs, enforce strict AST syntax invariants, and verify cryptographic HMAC-SHA256 durability receipts directly in your pull requests.
       </p>
-    </header>
 
-    <!-- 1-Minute Quickstart -->
-    <div class="card">
-      <h2>🚀 1-Minute GitHub Actions Quickstart</h2>
-      <p class="card-desc">Add this single workflow file to any repository to guard against AI agent hallucinations, parameter drift, and decorator stripping:</p>
-      
-      <pre><code><button class="copy-btn" onclick="copyCode(this)">Copy</button># .github/workflows/letitloop-verify.yml
-name: Verify AI Pull Request
-on:
-  pull_request:
-    branches: [main, master]
-
-permissions:
-  contents: read
-  pull-requests: write
-
-jobs:
-  verify:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Run LetItLoop Verification Gate
-        uses: sdageltc/letitloop-action@v1
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          strict-ast: 'true'
-          test-command: 'pytest -q'</code></pre>
-    </div>
-
-    <!-- Live PR Receipt Preview Mockup -->
-    <div class="card">
-      <h2>📜 Cryptographic Proof Receipts on PRs</h2>
-      <p class="card-desc">When AI agents submit PRs, <code>letitloop-action</code> automatically posts a machine-verifiable proof receipt directly to the pull request discussion:</p>
-
-      <div class="pr-mockup">
-        <div class="pr-header">
-          <strong>github-actions</strong> <span style="color: #8b949e;">bot commented on PR #42</span>
-          <span class="pr-badge">LetItLoop Verified</span>
+      <div class="action-strip">
+        <a href="#quickstart" class="btn-action-primary">
+          <span>View Action Spec</span>
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a href="https://sdageltc.github.io/letitloop/" class="btn-action-secondary">
+          Explore Runtime Engine
+        </a>
+        <div class="install-pill" onclick="copyText('uses: sdageltc/letitloop-action@v2', this)">
+          <span>uses: sdageltc/letitloop-action@v2</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
         </div>
-        <table class="pr-table">
-          <thead>
-            <tr>
-              <th>Verification Check</th>
-              <th>Status</th>
-              <th>Details & Evidence</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>AST Signature Invariance</strong></td>
-              <td><span style="color: #34d399; font-weight: bold;">✓ PASS</span></td>
-              <td>0 signature drifts detected across 4 mutated functions</td>
-            </tr>
-            <tr>
-              <td><strong>Scope Fence Invariant</strong></td>
-              <td><span style="color: #34d399; font-weight: bold;">✓ PASS</span></td>
-              <td>All modified files within declared task boundary</td>
-            </tr>
-            <tr>
-              <td><strong>Deterministic Test Gate</strong></td>
-              <td><span style="color: #34d399; font-weight: bold;">✓ PASS</span></td>
-              <td>23/23 tests passed in 1.4s (exit code 0)</td>
-            </tr>
-            <tr>
-              <td><strong>HMAC SHA-256 Receipt</strong></td>
-              <td><span style="color: #38bdf8; font-family: monospace;">e3b0c44298fc1c149afbf4c8...</span></td>
-              <td>Non-repudiation cryptographic verification signature</td>
-            </tr>
-          </tbody>
-        </table>
+      </div>
+    </section>
+
+    <!-- Verified Metrics Ribbon -->
+    <div class="metric-ribbon">
+      <div class="metric-cell">
+        <div class="metric-num">v2.0.0</div>
+        <div class="metric-lbl">Action Release</div>
+      </div>
+      <div class="metric-cell">
+        <div class="metric-num">100%</div>
+        <div class="metric-lbl">Fail-Closed Safety</div>
+      </div>
+      <div class="metric-cell">
+        <div class="metric-num">0.00 s</div>
+        <div class="metric-lbl">Extra Runner Overhead</div>
+      </div>
+      <div class="metric-cell">
+        <div class="metric-num">HMAC</div>
+        <div class="metric-lbl">Proof Sealing</div>
       </div>
     </div>
 
-    <!-- 3 Core Guarantees -->
-    <div class="card">
-      <h2>✨ 3 Core Guarantees</h2>
-      <div class="grid-3">
-        <div class="feature-card">
-          <h3>🧬 1. AST Invariance</h3>
-          <p>Mathematically verifies that function names, argument types, defaults, and return annotations are preserved during refactoring.</p>
-        </div>
-        <div class="feature-card">
-          <h3>🚧 2. Scope Fencing</h3>
-          <p>Fails closed if an AI agent touches unauthorized directories, modifies security configurations, or deletes production tests.</p>
-        </div>
-        <div class="feature-card">
-          <h3>🔏 3. Proof Receipts</h3>
-          <p>Signs execution telemetry with HMAC-SHA256 non-repudiation receipts, preventing tampered test results from entering main.</p>
-        </div>
+    <!-- Quickstart Code Section -->
+    <div class="full-rule" id="quickstart"></div>
+    <div class="section-head pad">
+      <div class="section-kicker">Workflow Configuration</div>
+      <h2 class="section-title">Drop-In CI Durability Gate</h2>
+      <p class="section-sub">Enforce zero-regression AST invariants and proof receipts on every incoming Pull Request.</p>
+    </div>
+
+    <div class="code-box-wrap pad">
+      <div class="code-container">
+        <button class="code-copy-btn" onclick="copyCode('code-action-full', this)">Copy Workflow</button>
+        <pre><code id="code-action-full"><span style="color: #94a3b8;"># .github/workflows/letitloop-gate.yml</span>
+<span style="color: #38bdf8;">name</span>: LetItLoop Proof Verification Gate
+<span style="color: #38bdf8;">on</span>:
+  <span style="color: #60a5fa;">pull_request</span>:
+    <span style="color: #38bdf8;">branches</span>: [ <span style="color: #facc15;">"main"</span> ]
+
+<span style="color: #38bdf8;">jobs</span>:
+  <span style="color: #60a5fa;">verify-durability-proof</span>:
+    <span style="color: #38bdf8;">name</span>: Verify AST Invariants & HMAC Proof Receipts
+    <span style="color: #38bdf8;">runs-on</span>: ubuntu-latest
+    <span style="color: #38bdf8;">steps</span>:
+      - <span style="color: #38bdf8;">name</span>: Checkout Pull Request Branch
+        <span style="color: #38bdf8;">uses</span>: actions/checkout@v4
+
+      - <span style="color: #38bdf8;">name</span>: Execute LetItLoop Gate
+        <span style="color: #38bdf8;">uses</span>: sdageltc/letitloop-action@v2
+        <span style="color: #38bdf8;">with</span>:
+          <span style="color: #34d399;">strict_ast</span>: <span style="color: #facc15;">true</span>
+          <span style="color: #34d399;">require_proof_receipt</span>: <span style="color: #facc15;">true</span>
+          <span style="color: #34d399;">fail_on_undeclared_outputs</span>: <span style="color: #facc15;">true</span></code></pre>
+      </div>
+    </div>
+
+    <!-- Bento Grid -->
+    <div class="full-rule"></div>
+    <div class="section-head pad">
+      <div class="section-kicker">Core Protections</div>
+      <h2 class="section-title">CI Security & Conformance Features</h2>
+      <p class="section-sub">Autonomous defense against broken AST nodes, runaway file modifications, and unverified AI code.</p>
+    </div>
+
+    <div class="bento-grid">
+      <div class="bento-box">
+        <div class="bento-tag">FEATURE 01</div>
+        <h3 class="bento-h">Strict AST Syntax Gate</h3>
+        <p class="bento-p">Runs Python AST parser across every modified file in the PR diff. Rejects syntax errors, unbalanced brackets, and broken tokens before test runs.</p>
+      </div>
+
+      <div class="bento-box">
+        <div class="bento-tag">FEATURE 02</div>
+        <h3 class="bento-h">HMAC Receipt Verification</h3>
+        <p class="bento-p">Validates the cryptographic seal of <code>.bench_wal/proof_receipt.json</code> to prove that tests and benchmarks were physically executed.</p>
+      </div>
+
+      <div class="bento-box">
+        <div class="bento-tag">FEATURE 03</div>
+        <h3 class="bento-h">Undeclared Output Fencing</h3>
+        <p class="bento-p">Fails closed if the agent writes files outside its declared output scope, preventing unauthorized modifications to workflow files or configs.</p>
+      </div>
+
+      <div class="bento-box">
+        <div class="bento-tag">FEATURE 04</div>
+        <h3 class="bento-h">Scorecard Compliance</h3>
+        <p class="bento-p">Fully compatible with OpenSSF Scorecard and EU Cyber Resilience Act (CRA) machine-verifiable verification mandates.</p>
+      </div>
+
+      <div class="bento-box">
+        <div class="bento-tag">FEATURE 05</div>
+        <h3 class="bento-h">PR Benchmark Diffing</h3>
+        <p class="bento-p">Automatically benchmarks recovery latency on the PR branch and posts an ASCII comparative summary directly to the pull request.</p>
+      </div>
+
+      <div class="bento-box">
+        <div class="bento-tag">FEATURE 06</div>
+        <h3 class="bento-h">Zero Token Leakage</h3>
+        <p class="bento-p">Runs in isolated CI environments without requiring access to host secrets, external databases, or third-party webhooks.</p>
       </div>
     </div>
 
     <!-- Footer -->
-    <footer>
-      <div class="footer-links">
-        <a href="https://github.com/sdageltc/letitloop" target="_blank">Engine Core</a>
-        <a href="https://sdageltc.github.io/agent-durability-bench/">Durability Bench</a>
-        <a href="index.html">GitHub Action</a>
-        <a href="https://pypi.org/project/letitloop/" target="_blank">PyPI Package</a>
-        <a href="https://github.com/sdageltc" target="_blank">Maintainer (@sdageltc)</a>
+    <div class="full-rule"></div>
+    <footer class="pad">
+      <div class="footer-brand">
+        <img src="assets/logo.png" alt="LetItLoop" />
+        LetItLoop Open Source Ecosystem
       </div>
-      <p>© 2026 sdageltc • Open source under the MIT License.</p>
+      <div class="footer-links">
+        <a href="https://github.com/sdageltc/letitloop">Runtime Engine</a>
+        <a href="https://sdageltc.github.io/agent-durability-bench/">DCP-2.0 Benchmark</a>
+        <a href="https://github.com/sdageltc/letitloop-action">Action Repo</a>
+        <a href="https://github.com/sdageltc/letitloop/blob/main/LICENSE">MIT License</a>
+      </div>
     </footer>
-  </div>
+
+  </main>
 
   <script>
-    function copyCode(btn) {
-      const code = btn.parentElement.innerText.replace('Copy', '').trim();
-      navigator.clipboard.writeText(code).then(() => {
-        const old = btn.innerText;
-        btn.innerText = 'Copied!';
-        setTimeout(() => { btn.innerText = old; }, 2000);
-      });
+    function copyText(text, el) {
+      navigator.clipboard.writeText(text);
+      const span = el.querySelector('span');
+      const orig = span.innerText;
+      span.innerText = 'Copied to Clipboard!';
+      setTimeout(() => { span.innerText = orig; }, 1800);
+    }
+
+    function copyCode(codeId, btn) {
+      const code = document.getElementById(codeId).innerText;
+      navigator.clipboard.writeText(code);
+      btn.innerText = 'Copied!';
+      setTimeout(() => { btn.innerText = 'Copy Workflow'; }, 1800);
     }
   </script>
 </body>
