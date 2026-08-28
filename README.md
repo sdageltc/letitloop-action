@@ -4,6 +4,7 @@
 
 **Zero-Config GitHub Action for Proof-Carrying Verification on AI Pull Requests**
 
+[![Official Website](https://img.shields.io/badge/Website-LetItLoop-0284c7?logo=googlechrome&logoColor=white)](https://sdageltc.github.io/letitloop/)
 [![CI](https://github.com/sdageltc/letitloop-action/actions/workflows/ci.yml/badge.svg)](https://github.com/sdageltc/letitloop-action/actions/workflows/ci.yml)
 [![Action](https://img.shields.io/badge/GitHub%20Action-v2.0.0-blue.svg)](https://github.com/sdageltc/letitloop-action)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
