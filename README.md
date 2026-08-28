@@ -5,7 +5,7 @@
 **Zero-Config GitHub Action for Proof-Carrying Verification on AI Pull Requests**
 
 [![CI](https://github.com/sdageltc/letitloop-action/actions/workflows/ci.yml/badge.svg)](https://github.com/sdageltc/letitloop-action/actions/workflows/ci.yml)
-[![Action](https://img.shields.io/badge/GitHub%20Action-v1-orange.svg)](https://github.com/sdageltc/letitloop-action)
+[![Action](https://img.shields.io/badge/GitHub%20Action-v2.0.0-blue.svg)](https://github.com/sdageltc/letitloop-action)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Zero Runtime Dep](https://img.shields.io/badge/Runtime-Zero%20Node%20Modules-brightgreen.svg)](dist/index.js)
 
@@ -54,7 +54,7 @@ jobs:
           python-version: '3.11'
 
       - name: Run LetItLoop Verification Gate
-        uses: sdageltc/letitloop-action@v1
+        uses: sdageltc/letitloop-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           strict-ast: 'true'
