@@ -9,8 +9,9 @@
 [![Action](https://img.shields.io/badge/GitHub%20Action-v2.0.0-blue.svg)](https://github.com/sdageltc/letitloop-action)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Zero Runtime Dep](https://img.shields.io/badge/Runtime-Zero%20Node%20Modules-brightgreen.svg)](dist/index.js)
+[![Engine](https://img.shields.io/badge/LetItLoop-v0.7.1-blue.svg)](https://github.com/sdageltc/letitloop)
 
-**[Official Website](https://sdageltc.github.io/letitloop/)** • **[LetItLoop Engine](https://github.com/sdageltc/letitloop)** • **[DCP-2.0 Benchmark](https://sdageltc.github.io/agent-durability-bench/)** • **[GitHub Action](https://github.com/sdageltc/letitloop-action)**
+**[Official Website](https://sdageltc.github.io/letitloop/)** • **[LetItLoop Engine (v0.7.1)](https://github.com/sdageltc/letitloop)** • **[DCP-2.0 Benchmark](https://sdageltc.github.io/agent-durability-bench/)** • **[GitHub Action](https://github.com/sdageltc/letitloop-action)**
 
 </div>
 

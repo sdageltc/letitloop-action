@@ -1,5 +1,5 @@
 name: 'LetItLoop Proof-Carrying Verification Gate v2'
-description: 'Fail-closed AST + WAL + HMAC durability certificate — DCP-2.0 / LILWAL02 gate in <2.5s with deterministic PR proof comments'
+description: 'Fail-closed LILWAL02 + DCP-2.0 durability certificate for AI agent pipelines in <2.5s with deterministic PR proof comments'
 author: 'sdageltc'
 branding:
   icon: 'shield'
